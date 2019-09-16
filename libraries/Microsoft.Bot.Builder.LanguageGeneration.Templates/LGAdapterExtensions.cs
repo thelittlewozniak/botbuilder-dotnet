@@ -36,13 +36,14 @@ namespace Microsoft.Bot.Builder.LanguageGeneration
             DeclarativeTypeLoader.AddComponent(new LanguageGenerationComponentRegistration());
 
             // if there is no main.lg, then provide default engine (for inline expression evaluation only)
-            if (resourceExplorer.GetResource(defaultLg) == null)
+            try
+            {
+                resourceExplorer.GetResource(defaultLg);
+                botAdapter.UseLanguageGeneration(resourceExplorer, new ResourceMultiLanguageGenerator(defaultLg));
+            }
+            catch (ArgumentException err)
             {
                 botAdapter.UseLanguageGeneration(resourceExplorer, new TemplateEngineLanguageGenerator(string.Empty, defaultLg, LanguageGeneratorManager.ResourceResolver(resourceExplorer)));
-            }
-            else
-            {
-                botAdapter.UseLanguageGeneration(resourceExplorer, new ResourceMultiLanguageGenerator(defaultLg));
             }
 
             return botAdapter;

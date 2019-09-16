@@ -1,12 +1,15 @@
 ﻿using System.Collections.Generic;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Adaptive;
-using Microsoft.Bot.Builder.LanguageGeneration;
 using Microsoft.Bot.Builder.Dialogs.Adaptive.Recognizers;
-using Microsoft.Bot.Builder.Dialogs.Adaptive.Events;
 using Microsoft.Bot.Builder.Dialogs.Adaptive.Actions;
 using Microsoft.Bot.Builder.Dialogs.Adaptive.Input;
-
+using Microsoft.Bot.Builder.Dialogs.Adaptive.TriggerHandlers;
+using Microsoft.Bot.Builder.LanguageGeneration.Templates;
+using Microsoft.Bot.Builder.LanguageGeneration.Generators;
+using Microsoft.Bot.Builder.LanguageGeneration;
+using System.IO;
+    
 namespace Microsoft.BotBuilderSamples
 {
     public class RootDialog : ComponentDialog
@@ -14,10 +17,13 @@ namespace Microsoft.BotBuilderSamples
         public RootDialog()
             : base(nameof(RootDialog))
         {
+            var lgFile = Path.Combine(".", "Dialogs", "RootDialog", "RootDialog.lg");
+
             // Create instance of adaptive dialog. 
             var rootDialog = new AdaptiveDialog(nameof(AdaptiveDialog))
             {
-                Generator = new TemplateEngineLanguageGenerator(),
+                
+                Generator = new TemplateEngineLanguageGenerator(new TemplateEngine().AddFile(lgFile)),
                 Recognizer = new RegexRecognizer()
                 {
                     Intents = new List<IntentPattern>() {
@@ -25,27 +31,24 @@ namespace Microsoft.BotBuilderSamples
                             Intent = "Start",
                             Pattern = "(?i)start"
                         }
-                       
+
                     }
                 },
                 //AutoEndDialog = false,
-                Events = new List<IOnEvent>()
+                Triggers = new List<TriggerHandler>()
                 {
                     new OnConversationUpdateActivity()
                     {
                         Constraint = "toLower(turn.Activity.membersAdded[0].name) != 'bot'",
-                        Actions = new List<IDialog>()
-                        {
-                            new SendActivity("Welcome! \\n \\[suggestions=start\\]")
-                        }
+                        Actions = WelcomeUserAction()
                     },
                     new OnIntent() {
                         Intent = "Start",
-                        Actions = new List<IDialog>() {
+                        Actions = new List<Dialog>() {
                             new BeginDialog()
                             {
                                 Id = "childDialog",
-                                Property = "$result"
+                                ResultProperty = "$result"
                             },
                             new SendActivity("In outer dialog: I have {join($result, ',')")
                         }
@@ -55,11 +58,11 @@ namespace Microsoft.BotBuilderSamples
 
             var childDialog = new AdaptiveDialog("childDialog")
             {
-                Events = new List<IOnEvent>()
+                Triggers = new List<TriggerHandler>()
                 {
                     new OnBeginDialog()
                     {
-                        Actions = new List<IDialog>()
+                        Actions = new List<Dialog>()
                         {
                             new TextInput() {
                                 Prompt = new ActivityTemplate("What is your name?"),
@@ -91,20 +94,20 @@ namespace Microsoft.BotBuilderSamples
                             },
                             new EditArray()
                             {
-                                ArrayProperty = "$result",
+                                ItemsProperty = "$result",
                                 Value = "$name",
                                 ChangeType = EditArray.ArrayChangeType.Push
                             },
                             new EditArray()
                             {
-                                ArrayProperty = "$result",
+                                ItemsProperty = "$result",
                                 Value = "$age",
                                 ChangeType = EditArray.ArrayChangeType.Push
                             },
                             new SendActivity("I have {join($result, ',')"),
                             new EndDialog()
                             {
-                                ResultProperty = "$result"
+                                Value = "$result"
                             }
                         }
                     }
@@ -118,23 +121,22 @@ namespace Microsoft.BotBuilderSamples
             // The initial child Dialog to run.
             InitialDialogId = nameof(AdaptiveDialog);
         }
-        private static List<IDialog> WelcomeUserAction()
+        private static List<Dialog> WelcomeUserAction()
         {
-            return new List<IDialog>()
+            return new List<Dialog>()
             {
                 // Iterate through membersAdded list and greet user added to the conversation.
                 new Foreach()
                 {
-                    ListProperty = "turn.activity.membersAdded",
-                    ValueProperty = "turn.memberAdded",
-                    Actions = new List<IDialog>()
+                    ItemsProperty = "turn.activity.membersAdded",
+                    Actions = new List<Dialog>()
                     {
                         // Note: Some channels send two conversation update events - one for the Bot added to the conversation and another for user.
                         // Filter cases where the bot itself is the recipient of the message. 
                         new IfCondition()
                         {
-                            Condition = "turn.memberAdded.name != turn.activity.recipient.name",
-                            Actions = new List<IDialog>()
+                            Condition = "dialog.foreach.value.name != turn.activity.recipient.name",
+                            Actions = new List<Dialog>()
                             {
                                 new SendActivity("[WelcomeUser]")
                             }

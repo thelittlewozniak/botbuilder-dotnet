@@ -8,6 +8,7 @@ using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Dialogs.Debugging;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Builder.LanguageGeneration;
+using Microsoft.Bot.Builder.LanguageGeneration.Generators;
 using Microsoft.Bot.Connector.Authentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -25,7 +26,7 @@ namespace Microsoft.BotBuilderSamples
         {
             this.UseStorage(storage);
             this.UseState(userState, conversationState);
-            this.Use(new RegisterClassMiddleware<IMessageActivityGenerator>(new TextMessageActivityGenerator()));
+            this.Use(new RegisterClassMiddleware<IActivityGenerator>(new TextActivityGenerator()));
             this.UseDebugger(configuration.GetValue<int>("debugport", 4712));
             _templateEngine = new TemplateEngine().AddFile(Path.Combine(".", "AdapterWithErrorHandler.lg"));
             OnTurnError = async (turnContext, exception) =>

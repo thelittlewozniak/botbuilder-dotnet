@@ -73,8 +73,7 @@ namespace Microsoft.BotBuilderSamples.Bots
         {
             var channelList = await teamsConnectorClient.Teams.FetchChannelListAsync(turnContext.Activity.GetChannelData<TeamsChannelData>().Team.Id);
 
-            var replyActivity = MessageFactory.Text($"<at>{turnContext.Activity.From.Name}</at> Total of {channelList.Conversations.Count} channels are currently in team");
-            replyActivity.Entities = new List<Entity> { new Mention { Text = turnContext.Activity.From.Name, Mentioned = turnContext.Activity.From } };
+            var replyActivity = MessageFactory.Text($"Total of {channelList.Conversations.Count} channels are currently in team");
 
             await turnContext.SendActivityAsync(replyActivity);
 
@@ -87,8 +86,7 @@ namespace Microsoft.BotBuilderSamples.Bots
         {
             var teamMembers = await turnContext.TurnState.Get<IConnectorClient>().Conversations.GetConversationMembersAsync(conversationId);
 
-            var replyActivity = MessageFactory.Text($"<at>{turnContext.Activity.From.Name}</at> Total of {teamMembers.Count} members are currently in team");
-            replyActivity.Entities = new List<Entity> { new Mention { Text = turnContext.Activity.From.Name, Mentioned = turnContext.Activity.From } };
+            var replyActivity = MessageFactory.Text($"Total of {teamMembers.Count} members are currently in team");
 
             await turnContext.SendActivityAsync(replyActivity);
 
